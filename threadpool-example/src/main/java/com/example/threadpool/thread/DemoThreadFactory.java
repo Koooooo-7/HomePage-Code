@@ -9,9 +9,12 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @Date 2020/03/19
  */
 public class DemoThreadFactory implements ThreadFactory {
+
+    private static final AtomicInteger ai = new AtomicInteger(0);
+
     @Override
     public Thread newThread(Runnable r) {
-        AtomicInteger ai = new AtomicInteger(0);
+
         return new Thread(r, "DemoThreadService--" + ai.incrementAndGet());
     }
 }

@@ -16,5 +16,10 @@ public class ThreadService implements Runnable {
     public void run() {
         String name = Thread.currentThread().getName();
         System.out.println(String.format("Thread: %s is sending massage to %s ", name, number));
+        try {
+            Thread.sleep(2_000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }

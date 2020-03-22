@@ -24,23 +24,27 @@ public class WaitRejectedExecutionHandler implements RejectedExecutionHandler {
             treadInfo.set(threadInfo);
         }
 
-        if (threadInfo.getR() != r || threadInfo.getExecutor() != executor) {
+        if (threadInfo.getTask() != r || threadInfo.getExecutor() != executor) {
             threadInfo = new ThreadInfo(r, executor);
             treadInfo.set(threadInfo);
         }
 
         threadInfo.incRejectTimes();
 
-        if (threadInfo.getRejectTimes() > 100) {
+        if (threadInfo.getRejectTimes() > 3) {
             throw new ThreadRejectException(Thread.currentThread().getName() + "was rejected enough !");
         }
 
         while (!executor.isShutdown()) {
-            LockSupport.parkNanos(1000000);
+            // holding current thread
+            LockSupport.parkNanos(100_000 * threadInfo.getRejectTimes());
+            //  try again, set condition
             if (executor.getActiveCount() < executor.getMaximumPoolSize() * 0.9) {
-                executor.submit(r);
+                executor.execute(r);
+                break;
             }
-            LockSupport.parkNanos(1000000000);
+            //  holding again
+            LockSupport.parkNanos(500_000);
         }
 
     }
@@ -49,36 +53,28 @@ public class WaitRejectedExecutionHandler implements RejectedExecutionHandler {
 }
 
 class ThreadInfo {
-    private Runnable r;
+    private Runnable task;
     private ThreadPoolExecutor executor;
     private int rejectTimes;
 
-    public ThreadInfo(Runnable r, ThreadPoolExecutor executor) {
-        this.r = r;
+    ThreadInfo(Runnable task, ThreadPoolExecutor executor) {
+        this.task = task;
         this.executor = executor;
     }
 
-    public Runnable getR() {
-        return r;
+    public Runnable getTask() {
+        return task;
     }
 
-    public void setR(Runnable r) {
-        this.r = r;
-    }
-
-    public ThreadPoolExecutor getExecutor() {
+    ThreadPoolExecutor getExecutor() {
         return executor;
     }
 
-    public void setExecutor(ThreadPoolExecutor executor) {
-        this.executor = executor;
-    }
-
-    public int getRejectTimes() {
+    int getRejectTimes() {
         return rejectTimes;
     }
 
-    public void incRejectTimes() {
+    void incRejectTimes() {
         this.rejectTimes++;
     }
 }
